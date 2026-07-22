@@ -1,0 +1,7 @@
+No user collateral or debt balance may go negative.
+Total collateral must equal the sum of all user collateral.
+Total debt must equal the sum of all user debt.
+The system must be overcollateralized: totalCollateral * liqThreshold >= totalDebt * 10000.
+User borrows must maintain individual health: collateral * liqThreshold >= debt * 10000.
+User balances and total assets must remain non-negative.
+All state-mutating functions use a reentrancy lock.

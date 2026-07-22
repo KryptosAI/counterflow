@@ -1,0 +1,16 @@
+{
+  "model": "erc20_pool",
+  "functions": [
+    {
+      "name": "transferFrom",
+      "guards": ["bal_src_ge_amt"],
+      "effects": ["allowance_sub_amt", "bal_sub_amt_src", "bal_add_amt_to"]
+    }
+  ],
+  "invariants": ["nonneg_balance", "nonneg_allowance", "solvency", "nonneg_total"],
+  "invariant_mapping": [
+    { "english": "A spender can never move more than they were approved for.", "invariant": "nonneg_allowance" },
+    { "english": "A user's balance can never go negative.", "invariant": "nonneg_balance" },
+    { "english": "User balances always sum to totalAssets.", "invariant": "solvency" }
+  ]
+}

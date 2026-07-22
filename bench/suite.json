@@ -1,0 +1,21 @@
+{
+  "description": "Counterflow benchmark: known-exploit patterns vs correct references.",
+  "cases": [
+    { "name": "TokenPool (safe)",                       "binding": "../examples/TokenPool.binding.json",       "expected_verdict": "proved",    "class": "reference" },
+    { "name": "TokenPoolBuggy (missing balance check)",  "binding": "../examples/TokenPoolBuggy.binding.json",  "expected_verdict": "violated",  "class": "underflow-drain",     "expected_invariant": "nonneg_balance" },
+    { "name": "SafeVault (safe)",                       "binding": "bindings/SafeVault.binding.json",          "expected_verdict": "proved",    "class": "reference" },
+    { "name": "ApprovalDrain (missing allowance check)", "binding": "bindings/ApprovalDrain.binding.json",      "expected_verdict": "violated",  "class": "approval-drain",      "expected_invariant": "nonneg_allowance" },
+    { "name": "UnbackedMintVault (infinite mint)",      "binding": "bindings/UnbackedMintVault.binding.json",  "expected_verdict": "violated",  "class": "unbacked-mint",       "expected_invariant": "backing" },
+    { "name": "BurnDesyncVault (totalShares desync)",    "binding": "bindings/BurnDesyncVault.binding.json",    "expected_verdict": "violated",  "class": "accounting-desync",   "expected_invariant": "shares_integrity" },
+    { "name": "AMMSwap (safe)",                         "binding": "bindings/AMMSwap.binding.json",            "expected_verdict": "proved",    "class": "amm-reference" },
+    { "name": "AMMPriceManipulation (drain)",           "binding": "bindings/AMMPriceManipulation.binding.json","expected_verdict": "violated",  "class": "amm-manipulation",    "expected_invariant": "nonneg_reserves" },
+    { "name": "LendingPool (safe)",                     "binding": "bindings/LendingPool.binding.json",        "expected_verdict": "proved",    "class": "lending-reference" },
+    { "name": "LendingUnbackedBorrow (no health check)","binding": "bindings/LendingUnbackedBorrow.binding.json","expected_verdict": "violated", "class": "lending-unbacked",    "expected_invariant": "overcollateralized" },
+    { "name": "StakingPool (safe)",                     "binding": "bindings/StakingPool.binding.json",        "expected_verdict": "proved",    "class": "staking-reference" },
+    { "name": "StakingInfiniteReward (no balance check)","binding": "bindings/StakingInfiniteReward.binding.json","expected_verdict": "violated","class": "staking-exploit",     "expected_invariant": "nonneg_balance" },
+    { "name": "OracleSafe (safe)",                      "binding": "bindings/OracleSafe.binding.json",          "expected_verdict": "proved",    "class": "oracle-reference" },
+    { "name": "OracleManipulation (manipulate)",        "binding": "bindings/OracleManipulation.binding.json",  "expected_verdict": "violated",  "class": "oracle-exploit",      "expected_invariant": "oracle_integrity" },
+    { "name": "GovernanceTimelock (safe)",              "binding": "bindings/GovernanceTimelock.binding.json",  "expected_verdict": "proved",    "class": "governance-reference" },
+    { "name": "GovernanceNoTimelock (no timelock)",     "binding": "bindings/GovernanceNoTimelock.binding.json","expected_verdict": "violated",  "class": "governance-exploit",  "expected_invariant": "solvency" }
+  ]
+}

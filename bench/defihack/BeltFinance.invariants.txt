@@ -1,0 +1,3 @@
+No user balance may go negative.
+The total pool assets must remain non-negative.
+After every operation, totalAssets must equal the sum of all user balances.

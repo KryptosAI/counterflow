@@ -1,0 +1,14 @@
+.venv/
+node_modules/
+binding.json
+halmos/out/
+halmos/cache/
+echidna-output/
+foundry-output/
+__pycache__/
+*.pyc
+audit.jsonl
+.env
+*.tgz
+.DS_Store
+tmp_*.json

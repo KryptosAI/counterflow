@@ -1,0 +1,13 @@
+{
+  "model": "erc20_pool",
+  "functions": [
+    { "name": "deposit", "guards": ["amt_gt_0"], "effects": ["bal_add_amt", "total_add_amt"] },
+    { "name": "withdraw", "guards": ["amt_gt_0", "bal_ge_amt"], "effects": ["bal_sub_amt", "total_sub_amt"] }
+  ],
+  "invariants": ["nonneg_balance", "nonneg_total", "solvency"],
+  "invariant_mapping": [
+    { "english": "A user's balance can never go negative.", "invariant": "nonneg_balance" },
+    { "english": "The pool's total assets can never go negative.", "invariant": "nonneg_total" },
+    { "english": "No user can ever hold a balance claim larger than the pool's total assets.", "invariant": "solvency" }
+  ]
+}

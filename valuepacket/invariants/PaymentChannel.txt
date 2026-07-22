@@ -1,0 +1,26 @@
+# PaymentChannel.sol — Safety Properties (English)
+
+# ==========================================
+# POOL-LEVEL (modelable with current Counterflow vocabulary)
+# ==========================================
+
+All user deposits flow into the contract and are only released via authorized close or refund.
+The total token balance held by the contract must never go negative.
+After every operation, the contract's total held must equal the sum of all open channel deposits (accounting integrity).
+
+# ==========================================
+# CHANNEL-LEVEL (requires channel-aware model extension)
+# ==========================================
+
+A channel can only transition from Open to Settled (via closeChannel by payee) or Refunded (via refundChannel by payer after expiry). Once settled or refunded, a channel is terminal.
+For every settled channel, spent + refund = deposit (exact payout).
+A channel can only be refunded after its expiry timestamp has passed.
+A channel can only be closed by the payee with a valid EIP-712 signature from the payer.
+A channel's spent value can never exceed its deposit.
+
+# ==========================================
+# REENTRANCY
+# ==========================================
+
+All state-mutating functions use the nonReentrant modifier and must not enable cross-function reentrancy.
+External token transfers (safeTransfer, safeTransferFrom) must not re-enter and corrupt channel state.

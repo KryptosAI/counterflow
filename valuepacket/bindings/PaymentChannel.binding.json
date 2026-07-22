@@ -1,0 +1,71 @@
+{
+  "model": "erc20_pool",
+  "notes": "POOL-LEVEL ONLY. Channel/struct lifecycle invariants are NOT modeled here \u2014 the current vocabulary covers total contract token accounting. Channel-level properties (spent \u2264 deposit, expiry gating, signature authorization, status transitions) require a channel-aware model extension.",
+  "functions": [
+    {
+      "name": "openChannel",
+      "guards": [
+        "amt_gt_0"
+      ],
+      "effects": [
+        "total_add_amt"
+      ]
+    },
+    {
+      "name": "closeChannel",
+      "guards": [
+        "amt_gt_0",
+        "total_ge_amt"
+      ],
+      "effects": [
+        "total_sub_amt"
+      ]
+    },
+    {
+      "name": "refundChannel",
+      "guards": [
+        "total_ge_amt"
+      ],
+      "effects": [
+        "total_sub_amt"
+      ]
+    },
+    {
+      "name": "extendChannel",
+      "guards": [
+        "amt_gt_0"
+      ],
+      "effects": [
+        "total_add_amt"
+      ]
+    }
+  ],
+  "invariants": [
+    "nonneg_total"
+  ],
+  "invariant_mapping": [
+    {
+      "english": "Total token balance held by the contract must never go negative.",
+      "invariant": "nonneg_total"
+    },
+    {
+      "english": "Total held cannot exceed the practical supply cap for any ERC-20.",
+      "invariant": "supply_cap"
+    }
+  ],
+  "coverage": {
+    "checked": [
+      "deposit conservation (pool-level)",
+      "non-negative contract balance"
+    ],
+    "not_checked": [
+      "channel status transitions",
+      "per-channel spent \u2264 deposit",
+      "signature authorization in closeChannel",
+      "expiry gating on refundChannel",
+      "reentrancy safety (nonReentrant modifier)",
+      "payee-only close, payer-only refund"
+    ],
+    "recommendation": "Extend trusted core with a channel_pool model that tracks per-channel state (deposit, spent, status, payer, payee, expiry) and channel lifecycle invariants."
+  }
+}

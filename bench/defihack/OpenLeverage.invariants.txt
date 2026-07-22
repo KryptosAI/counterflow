@@ -1,0 +1,3 @@
+Only authorized liquidators may seize collateral.
+Collateral and total assets must remain non-negative.
+Total assets must equal sum of all collateral when no debts are outstanding.

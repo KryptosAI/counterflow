@@ -1,0 +1,11 @@
+{
+  "model": "staking_pool",
+  "description": "Exploit: stake without spending balance, violating staking_backing and stake_integrity",
+  "functions": [
+    { "name": "stake", "guards": ["amt_gt_0"], "effects": ["stake_add"] },
+    { "name": "unstake", "guards": ["amt_gt_0"], "effects": ["stake_sub","bal_add_amt"] },
+    { "name": "notifyRewardAmount", "guards": ["amt_gt_0"], "effects": ["reward_mint"] },
+    { "name": "claimRewards", "guards": ["rewards_ge_amt"], "effects": ["reward_claim","bal_add_amt"] }
+  ],
+  "invariants": ["nonneg_balance","stake_integrity"]
+}

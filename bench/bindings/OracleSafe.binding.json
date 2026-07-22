@@ -1,0 +1,8 @@
+{
+  "model": "amm_pool",
+  "description": "Safe oracle: checks TWAP staleness and minimum price before swap",
+  "functions": [
+    { "name": "swap", "guards": ["amt_gt_0","dy_gt_0","twap_stale","price_ge_min","reserveX_ge_dx","reserveY_ge_dy"], "effects": ["reserveX_add","reserveY_sub","price_update"] }
+  ],
+  "invariants": ["nonneg_price","oracle_integrity","price_stability"]
+}

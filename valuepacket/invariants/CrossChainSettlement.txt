@@ -1,0 +1,25 @@
+# CrossChainSettlement.sol — Safety Properties (English)
+
+# ==========================================
+# POOL-LEVEL (modelable)
+# ==========================================
+
+All deposits flow into the contract. Total held must never go negative.
+Tokens are only released via settleFromSource (authorized Axelar relay) or refund (after timeout).
+
+# ==========================================
+# ESCROW-LEVEL (requires escrow-aware model extension)
+# ==========================================
+
+An escrow can only transition from unsettled to settled once.
+After settlement, spent <= deposit (spent goes to payee, remaining to payer).
+Refund is only allowed after the timeout deadline has passed.
+Only the Axelar gateway can call settleFromSource.
+settleFromSource requires a valid EIP-712 signature from the payer on the source chain.
+
+# ==========================================
+# BRIDGE SECURITY
+# ==========================================
+
+settleFromSource is gated by the onlyGateway modifier: only the Axelar gateway contract can invoke it.
+The source domain separator and chain ID are immutable and verified in signature recovery.

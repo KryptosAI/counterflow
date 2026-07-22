@@ -1,0 +1,3 @@
+A user's balance can never go negative.
+The pool's total assets can never go negative.
+No user can ever hold a balance claim larger than the pool's total assets.

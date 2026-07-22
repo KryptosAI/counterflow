@@ -1,0 +1,9 @@
+{
+  "model": "erc20_pool",
+  "description": "FEI Protocol reentrancy exploit — withdraw without lock, external call before state update",
+  "functions": [
+    { "name": "deposit", "guards": ["amt_gt_0","not_locked"], "effects": ["reentrancy_lock_acquire","bal_add_amt","total_add_amt","reentrancy_lock_release"] },
+    { "name": "withdraw", "guards": ["amt_gt_0","bal_ge_amt"], "effects": ["external_call","bal_sub_amt","total_sub_amt"] }
+  ],
+  "invariants": ["nonneg_balance","nonneg_total","solvency","reentrancy_safe"]
+}

@@ -1,0 +1,4 @@
+The withdraw function must not let a reentrant callback drain the pool.
+After every operation, totalAssets must equal the sum of all user balances.
+No account balance may go negative.
+Reentrant callbacks must not change pool state during an external call.

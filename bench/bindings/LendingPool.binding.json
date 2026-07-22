@@ -1,0 +1,11 @@
+{
+  "model": "lending_pool",
+  "description": "Safe lending — deposit/withdraw collateral with health checks, borrow, repay",
+  "functions": [
+    { "name": "depositCollateral", "guards": ["amt_gt_0","not_locked"], "effects": ["collateral_add"] },
+    { "name": "withdrawCollateral", "guards": ["amt_gt_0","collateral_ge_amt","healthy_position","not_locked"], "effects": ["collateral_sub"] },
+    { "name": "borrow", "guards": ["amt_gt_0","healthy_position","not_locked"], "effects": ["debt_add","bal_add_amt"] },
+    { "name": "repay", "guards": ["amt_gt_0","debt_ge_amt","bal_ge_amt","not_locked"], "effects": ["debt_sub","bal_sub_amt"] }
+  ],
+  "invariants": ["nonneg_collateral","nonneg_debt","collateral_integrity","debt_integrity","nonneg_balance","nonneg_total_collateral","nonneg_total_debt"]
+}

@@ -1,0 +1,5 @@
+Reserve balances must never go negative.
+After every swap, the constant product (reserve0 * reserve1) must not decrease.
+Total LP token supply must equal the sum of all LP balances.
+No LP balance may go negative.
+All state-mutating functions use a reentrancy lock.

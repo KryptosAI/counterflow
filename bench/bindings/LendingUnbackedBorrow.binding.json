@@ -1,0 +1,10 @@
+{
+  "model": "lending_pool",
+  "description": "Exploit: borrow without healthy_position guard, violating overcollateralized and lending_solvency",
+  "functions": [
+    { "name": "depositCollateral", "guards": ["amt_gt_0"], "effects": ["collateral_add"] },
+    { "name": "borrow", "guards": ["amt_gt_0"], "effects": ["debt_add","bal_add_amt"] },
+    { "name": "repay", "guards": ["amt_gt_0","bal_ge_amt"], "effects": ["debt_sub","bal_sub_amt"] }
+  ],
+  "invariants": ["nonneg_collateral","nonneg_debt","overcollateralized","lending_solvency","nonneg_balance"]
+}

@@ -1,0 +1,9 @@
+{
+  "model": "amm_pool",
+  "description": "Exploit: attacker manipulates oracle price before swap, violating oracle_integrity",
+  "functions": [
+    { "name": "manipulate", "guards": ["amt_gt_0"], "effects": ["oracle_manipulate"] },
+    { "name": "swap", "guards": ["amt_gt_0","dy_gt_0","price_valid","reserveX_ge_dx","reserveY_ge_dy"], "effects": ["reserveX_add","reserveY_sub","price_update"] }
+  ],
+  "invariants": ["nonneg_price","oracle_integrity"]
+}

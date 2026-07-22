@@ -1,0 +1,61 @@
+{
+  "source_repo": "https://github.com/SunWeb3Sec/DeFiHackLabs",
+  "license": "Apache-2.0",
+  "cases": [
+    {
+      "name": "fei-protocol-reentrancy",
+      "exploit_class": "reentrancy",
+      "contract": "FeiProtocol.sol",
+      "invariants": "FeiProtocol.invariants.txt",
+      "binding": "FeiProtocol.binding.json",
+      "expected_verdict": "violated",
+      "expected_invariant": "reentrancy_safe",
+      "real_loss_usd": 80000000,
+      "description": "FEI Protocol reentrancy exploit — flashloan-triggered reentrancy in withdraw"
+    },
+    {
+      "name": "cream-finance-reentrancy",
+      "exploit_class": "reentrancy",
+      "contract": "CreamFinance.sol",
+      "invariants": "CreamFinance.invariants.txt",
+      "binding": "CreamFinance.binding.json",
+      "expected_verdict": "violated",
+      "expected_invariant": "nonneg_balance",
+      "real_loss_usd": 130000000,
+      "description": "Cream Finance reentrancy via ERC777 token callback"
+    },
+    {
+      "name": "pancake-bunny-flashloan",
+      "exploit_class": "flash-loan",
+      "contract": "PancakeBunny.sol",
+      "invariants": "PancakeBunny.invariants.txt",
+      "binding": "PancakeBunny.binding.json",
+      "expected_verdict": "violated",
+      "expected_invariant": "backing",
+      "real_loss_usd": 45000000,
+      "description": "PancakeBunny flash loan price manipulation"
+    },
+    {
+      "name": "open-leverage-access-control",
+      "exploit_class": "access-control",
+      "contract": "OpenLeverage.sol",
+      "invariants": "OpenLeverage.invariants.txt",
+      "binding": "OpenLeverage.binding.json",
+      "expected_verdict": "violated",
+      "expected_invariant": "backing",
+      "real_loss_usd": 230000,
+      "description": "OpenLeverage missing access control on liquidation function"
+    },
+    {
+      "name": "belt-finance-arithmetic",
+      "exploit_class": "arithmetic",
+      "contract": "BeltFinance.sol",
+      "invariants": "BeltFinance.invariants.txt",
+      "binding": "BeltFinance.binding.json",
+      "expected_verdict": "violated",
+      "expected_invariant": "nonneg_total",
+      "real_loss_usd": 6300000,
+      "description": "Belt Finance arithmetic underflow in withdraw logic"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+Total underlying assets must equal the sum of all user underlying balances.
+Total cToken supply must equal the sum of all cToken balances.
+Underlying and cToken totals must remain non-negative.
+The exchange rate must only increase (never decrease).

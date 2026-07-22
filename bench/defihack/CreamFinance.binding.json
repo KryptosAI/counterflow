@@ -1,0 +1,9 @@
+{
+  "model": "erc20_pool",
+  "description": "CREAM Finance reentrancy — borrow without balance check, external call before state revert",
+  "functions": [
+    { "name": "deposit", "guards": ["amt_gt_0"], "effects": ["bal_add_amt","total_add_amt"] },
+    { "name": "borrow", "guards": ["amt_gt_0"], "effects": ["bal_sub_amt","total_sub_amt","external_call"] }
+  ],
+  "invariants": ["nonneg_balance","nonneg_total","reentrancy_safe"]
+}

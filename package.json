@@ -1,0 +1,90 @@
+{
+  "name": "@kryptosai/counterflow",
+  "version": "0.4.0",
+  "description": "Prove the contract, or reveal the exploit — formal verification for Solidity and DeFi smart contracts. AI-translated invariants proved or refuted by Z3 SMT, with Halmos bytecode backstop and Foundry/Echidna export.",
+  "main": "src/verify.js",
+  "bin": {
+    "counterflow": "src/cli.js"
+  },
+  "scripts": {
+    "test": "node test/e2e.js",
+    "bench": "node bench/run.js",
+    "bytecode": "node src/cli.js bytecode HalmosTest",
+    "defihack:clone": "bash bench/defihack/setup.sh",
+    "defihack:bench": "node bench/defihack/runner.js",
+    "all": "npm test && npm run bench && npm run defihack:bench && npm run bytecode",
+    "valuepacket": "node valuepacket/run.js",
+    "valuepacket:check": "node src/cli.js check valuepacket/bindings/PaymentChannel.binding.json && node src/cli.js check valuepacket/bindings/CrossChainSettlement.binding.json && node src/cli.js check valuepacket/bindings/SubscriptionManager.binding.json",
+    "doctor": "node src/cli.js doctor",
+    "leaderboard": "node src/cli.js leaderboard",
+    "leaderboard:md": "node src/cli.js leaderboard --markdown",
+    "badge": "node src/cli.js badge",
+    "serve": "node src/cli.js serve",
+    "audit": "node src/cli.js audit",
+    "dashboard": "node src/cli.js serve",
+    "completeness": "node src/cli.js completeness",
+    "mutate": "node src/cli.js mutate",
+    "real-contracts": "node src/cli.js check examples/UniswapV2Swap.binding.json && node src/cli.js check examples/AaveLending.binding.json && node src/cli.js check examples/CompoundCToken.binding.json",
+    "cvl-export": "node src/cli.js export-cvl examples/TokenPool.binding.json -o examples/TokenPool.spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KryptosAI/counterflow"
+  },
+  "keywords": [
+    "formal-verification",
+    "smart-contracts",
+    "z3",
+    "solidity",
+    "invariants",
+    "llm",
+    "security",
+    "smart-contract-security",
+    "evm",
+    "ethereum",
+    "defi",
+    "defi-security",
+    "smt",
+    "smt-solver",
+    "invariant-testing",
+    "symbolic-execution",
+    "halmos",
+    "foundry",
+    "echidna",
+    "certora",
+    "erc20",
+    "amm",
+    "lending",
+    "staking",
+    "reentrancy",
+    "security-audit",
+    "exploit-detection",
+    "vulnerability-detection",
+    "ai"
+  ],
+  "author": "KryptosAI",
+  "license": "MIT",
+  "homepage": "https://github.com/KryptosAI/counterflow#readme",
+  "bugs": {
+    "url": "https://github.com/KryptosAI/counterflow/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "src",
+    "solver/*.py",
+    "examples",
+    "bench",
+    "halmos/src",
+    "halmos/test",
+    "halmos/foundry.toml",
+    "slither/*.py",
+    "valuepacket",
+    "assets",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "model": "erc20_pool",
+  "description": "Exploit: governance missing timelock — execute mints unbacked balance without delay",
+  "functions": [
+    { "name": "propose", "guards": ["amt_gt_0"], "effects": ["proposal_execute"] },
+    { "name": "execute", "guards": ["amt_gt_0"], "effects": ["bal_add_amt"] }
+  ],
+  "invariants": ["nonneg_balance","solvency","nonneg_timelock"]
+}

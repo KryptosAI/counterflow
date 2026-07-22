@@ -1,0 +1,73 @@
+{
+  "model": "erc20_pool",
+  "notes": "POOL-LEVEL ONLY. Subscription lifecycle and per-period invariants are NOT modeled. Contract now enforces period-bound renewal salts (salt == keccak256(abi.encode(subscriptionId, completedPeriods+1))) and per-subscription held-balance escrow accounting (cancel refunds only the subscription's own held balance; sweepCancelledSubscription returns the last channel's remainder to the payer after cancellation). Subscription-level properties (active\u2192cancelled transition, completedPeriods \u2264 maxPeriods, per-period spend limits, EIP-712 authorization, per-subscription held-balance formula) require a subscription-aware model extension.",
+  "functions": [
+    {
+      "name": "createSubscription",
+      "guards": [
+        "amt_gt_0"
+      ],
+      "effects": [
+        "total_add_amt"
+      ]
+    },
+    {
+      "name": "renew",
+      "guards": [
+        "amt_gt_0",
+        "total_ge_amt"
+      ],
+      "effects": [
+        "total_sub_amt"
+      ]
+    },
+    {
+      "name": "cancel",
+      "guards": [
+        "total_ge_amt"
+      ],
+      "effects": [
+        "total_sub_amt"
+      ]
+    },
+    {
+      "name": "sweepCancelledSubscription",
+      "guards": [
+        "total_ge_amt"
+      ],
+      "effects": [
+        "total_sub_amt"
+      ]
+    }
+  ],
+  "invariants": [
+    "nonneg_total"
+  ],
+  "invariant_mapping": [
+    {
+      "english": "Total token balance held by the contract must never go negative.",
+      "invariant": "nonneg_total"
+    },
+    {
+      "english": "Total held cannot exceed the practical supply cap.",
+      "invariant": "supply_cap"
+    }
+  ],
+  "coverage": {
+    "checked": [
+      "deposit conservation (pool-level)",
+      "non-negative contract balance"
+    ],
+    "not_checked": [
+      "subscription active\u2192cancelled transition",
+      "completedPeriods \u2264 maxPeriods",
+      "per-period spent \u2264 amountPerPeriod",
+      "EIP-712 subscription signature verification",
+      "period-bound renewal salt (replay protection)",
+      "per-subscription held-balance accounting (heldBalance mapping; cancel/sweep refund isolation)",
+      "totalDeposited tracking accuracy",
+      "reentrancy safety (nonReentrant modifier)"
+    ],
+    "recommendation": "Extend trusted core with a subscription_pool model that tracks per-subscription state (payer, payee, amountPerPeriod, completedPeriods, maxPeriods, active, totalDeposited, totalSpent, heldBalance) and subscription lifecycle invariants, including sum(heldBalance) \u2264 pool balance and period-bound salt enforcement."
+  }
+}

@@ -1,0 +1,3 @@
+Every share must be backed 1:1 by assets — totalAssets >= totalShares.
+Share and asset totals must integrate: sum of all user shares equals totalShares.
+No user share balance may go negative.

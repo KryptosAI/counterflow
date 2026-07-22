@@ -1,0 +1,10 @@
+{
+  "model": "erc20_pool",
+  "description": "PancakeBunny flash loan exploit — mintShares inflates supply without adding assets, breaking backing",
+  "functions": [
+    { "name": "deposit", "guards": ["amt_gt_0"], "effects": ["shares_add_amt","total_shares_add_amt","total_add_amt"] },
+    { "name": "mintShares", "guards": ["amt_gt_0"], "effects": ["shares_add_amt","total_shares_add_amt"] },
+    { "name": "redeem", "guards": ["shares_ge_amt"], "effects": ["shares_sub_amt","total_shares_sub_amt","total_sub_amt"] }
+  ],
+  "invariants": ["nonneg_shares","backing","shares_integrity"]
+}

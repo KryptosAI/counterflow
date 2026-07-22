@@ -1,0 +1,20 @@
+{
+  "model": "erc20_pool",
+  "functions": [
+    {
+      "name": "deposit",
+      "guards": ["amt_gt_0"],
+      "effects": ["shares_add_amt", "total_shares_add_amt", "total_add_amt"]
+    },
+    {
+      "name": "ownerMint",
+      "guards": ["sender_is_owner"],
+      "effects": ["shares_add_amt", "total_shares_add_amt"]
+    }
+  ],
+  "invariants": ["nonneg_shares", "nonneg_total_shares", "nonneg_total", "shares_integrity", "backing"],
+  "invariant_mapping": [
+    { "english": "Every share is backed by at least one asset.", "invariant": "backing" },
+    { "english": "User shares always sum to the total share supply.", "invariant": "shares_integrity" }
+  ]
+}

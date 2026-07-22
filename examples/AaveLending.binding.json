@@ -1,0 +1,37 @@
+{
+  "model": "lending_pool",
+  "description": "Aave lending pool — deposit, collateral, borrow with health check, repay, withdraw, liquidate",
+  "functions": [
+    {
+      "name": "deposit",
+      "guards": ["amt_gt_0", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "bal_add_amt", "total_add_amt", "reentrancy_lock_release"]
+    },
+    {
+      "name": "depositCollateral",
+      "guards": ["amt_gt_0", "bal_ge_amt", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "bal_sub_amt", "collateral_add", "reentrancy_lock_release"]
+    },
+    {
+      "name": "borrow",
+      "guards": ["amt_gt_0", "healthy_position", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "debt_add", "bal_add_amt", "reentrancy_lock_release"]
+    },
+    {
+      "name": "repay",
+      "guards": ["amt_gt_0", "debt_ge_amt", "bal_ge_amt", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "debt_sub", "bal_sub_amt", "reentrancy_lock_release"]
+    },
+    {
+      "name": "withdrawCollateral",
+      "guards": ["amt_gt_0", "collateral_ge_amt", "healthy_position", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "collateral_sub", "bal_add_amt", "reentrancy_lock_release"]
+    },
+    {
+      "name": "liquidate",
+      "guards": ["amt_gt_0", "collateral_ge_amt", "debt_ge_amt", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "collateral_sub", "debt_sub", "reentrancy_lock_release"]
+    }
+  ],
+  "invariants": ["nonneg_balance", "nonneg_total", "nonneg_collateral", "nonneg_debt", "nonneg_total_collateral", "nonneg_total_debt", "collateral_integrity", "debt_integrity", "overcollateralized", "reentrancy_safe"]
+}

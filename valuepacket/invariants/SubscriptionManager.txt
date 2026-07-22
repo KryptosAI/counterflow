@@ -1,0 +1,24 @@
+# SubscriptionManager.sol — Safety Properties (English)
+
+# ==========================================
+# POOL-LEVEL (modelable)
+# ==========================================
+
+Deposits flow into the contract when creating subscriptions. Tokens are only released via renew (to payee) or cancel (to payer).
+Total held must never go negative.
+
+# ==========================================
+# SUBSCRIPTION-LEVEL (requires subscription-aware model extension)
+# ==========================================
+
+A subscription can only transition from active to inactive (via cancel). Once cancelled, it cannot be reactivated.
+completedPeriods <= maxPeriods (when maxPeriods > 0).
+Per-period spend (reported in renew) must not exceed amountPerPeriod.
+On cancel, refunded amount = min(contractBalance, totalDeposited - totalSpent).
+renew requires a valid EIP-712 subscription authorization signature from the payer.
+
+# ==========================================
+# REENTRANCY
+# ==========================================
+
+All state-mutating functions use nonReentrant. External calls to PaymentChannel (open, refund) must not create reentrancy hazards.

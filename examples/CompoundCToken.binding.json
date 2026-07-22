@@ -1,0 +1,27 @@
+{
+  "model": "lending_pool",
+  "description": "Compound cToken — mint/redeem for cToken collateral (1:1 with underlying at initial exchange rate), borrow/repay for debt with healthy_position guard. Borrow pulls underlying from pool (total_sub_amt), repay returns it (total_add_amt).",
+  "functions": [
+    {
+      "name": "mint",
+      "guards": ["amt_gt_0"],
+      "effects": ["total_add_amt", "collateral_add"]
+    },
+    {
+      "name": "redeem",
+      "guards": ["amt_gt_0", "collateral_ge_amt", "total_ge_amt"],
+      "effects": ["collateral_sub", "total_sub_amt"]
+    },
+    {
+      "name": "borrow",
+      "guards": ["amt_gt_0", "healthy_position", "total_ge_amt"],
+      "effects": ["debt_add", "bal_add_amt", "total_sub_amt"]
+    },
+    {
+      "name": "repay",
+      "guards": ["amt_gt_0", "debt_ge_amt", "bal_ge_amt"],
+      "effects": ["debt_sub", "bal_sub_amt", "total_add_amt"]
+    }
+  ],
+  "invariants": ["nonneg_balance", "nonneg_total", "nonneg_collateral", "nonneg_debt", "nonneg_total_collateral", "nonneg_total_debt", "collateral_integrity", "debt_integrity", "overcollateralized"]
+}

@@ -1,0 +1,9 @@
+{
+  "model": "amm_pool",
+  "description": "Exploit: drainPool removes reserves without any checks, violating nonneg_reserves",
+  "functions": [
+    { "name": "swap", "guards": ["amt_gt_0","dy_gt_0","reserveX_ge_dx","reserveY_ge_dy","not_locked"], "effects": ["reentrancy_lock_acquire","reserveX_add","reserveY_sub","reentrancy_lock_release"] },
+    { "name": "drainPool", "guards": ["amt_gt_0"], "effects": ["reserveX_sub","reserveY_sub"] }
+  ],
+  "invariants": ["nonneg_reserves","constant_product"]
+}

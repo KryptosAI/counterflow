@@ -1,0 +1,62 @@
+{
+  "model": "erc20_pool",
+  "notes": "POOL-LEVEL ONLY. Escrow/per-escrow lifecycle invariants are NOT modeled. Escrow-level properties (single settlement, signature verification, Axelar gateway gating, deadline-based refund) require an escrow-aware model extension.",
+  "functions": [
+    {
+      "name": "deposit",
+      "guards": [
+        "amt_gt_0"
+      ],
+      "effects": [
+        "total_add_amt"
+      ]
+    },
+    {
+      "name": "settleFromSource",
+      "guards": [
+        "amt_gt_0",
+        "total_ge_amt"
+      ],
+      "effects": [
+        "total_sub_amt"
+      ]
+    },
+    {
+      "name": "refund",
+      "guards": [
+        "total_ge_amt"
+      ],
+      "effects": [
+        "total_sub_amt"
+      ]
+    }
+  ],
+  "invariants": [
+    "nonneg_total"
+  ],
+  "invariant_mapping": [
+    {
+      "english": "Total token balance held by the contract must never go negative.",
+      "invariant": "nonneg_total"
+    },
+    {
+      "english": "Total held cannot exceed the practical supply cap.",
+      "invariant": "supply_cap"
+    }
+  ],
+  "coverage": {
+    "checked": [
+      "deposit conservation (pool-level)",
+      "non-negative contract balance"
+    ],
+    "not_checked": [
+      "escrow single-settlement",
+      "per-escrow spent \u2264 deposit",
+      "Axelar gateway-only access",
+      "signature verification",
+      "deadline-based refund gating",
+      "paymentId uniqueness"
+    ],
+    "recommendation": "Extend trusted core with an escrow_pool model that tracks per-escrow state (payer, payee, deposit, spent, settled, deadline) and escrow lifecycle invariants."
+  }
+}

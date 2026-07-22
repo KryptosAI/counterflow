@@ -1,0 +1,5 @@
+Reserve balances must never go negative.
+Total LP token supply must equal the sum of all LP balances.
+No LP balance may go negative.
+All state-mutating functions use a reentrancy lock.
+The sum of reserves must always equal or exceed the total LP supply (backing).

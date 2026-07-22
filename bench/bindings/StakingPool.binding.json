@@ -1,0 +1,11 @@
+{
+  "model": "staking_pool",
+  "description": "Safe staking — stake spends balance, unstake returns it, rewards are minted by owner",
+  "functions": [
+    { "name": "stake", "guards": ["amt_gt_0","bal_ge_amt","not_locked"], "effects": ["bal_sub_amt","stake_add"] },
+    { "name": "unstake", "guards": ["amt_gt_0","staked_ge_amt","not_locked"], "effects": ["stake_sub","bal_add_amt"] },
+    { "name": "notifyRewardAmount", "guards": ["amt_gt_0","sender_is_owner"], "effects": ["reward_mint"] },
+    { "name": "claimRewards", "guards": ["amt_gt_0","rewards_ge_amt","not_locked"], "effects": ["reward_claim","bal_add_amt"] }
+  ],
+  "invariants": ["nonneg_staked","nonneg_balance","stake_integrity"]
+}

@@ -1,0 +1,3 @@
+The borrow function must require the pool has enough total assets.
+No user balance may go negative.
+Total assets must remain non-negative.
