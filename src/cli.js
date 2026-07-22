@@ -54,6 +54,8 @@ COMMANDS
   extract        LLM translation only.
   check          Deterministic verification of a reviewed binding (no LLM).
   bytecode       Halmos symbolic execution against EVM bytecode.
+                 Add --expect to gate on halmos/expectations.json (safe must PASS,
+                 known exploits must FAIL with a counterexample). Exit 0 iff all match.
   bench          Run all benchmark + defihack cases.
   audit          Verify the tamper-evident audit chain.
   audit-binding  Cross-validate binding against Slither AST extraction.
@@ -139,7 +141,12 @@ async function main() {
   }
 
   if (cmd === 'bytecode') {
-    const testGlob = process.argv[3] || '*';
+    if (process.argv.includes('--expect')) {
+      const { spawnSync } = require('child_process');
+      const r = spawnSync(process.execPath, [path.join(__dirname, '..', 'bench', 'halmos-check.js')], { stdio: 'inherit' });
+      process.exit(r.status == null ? 2 : r.status);
+    }
+    const testGlob = (process.argv[3] && !process.argv[3].startsWith('--')) ? process.argv[3] : '*';
     const res = runHalmos(testGlob);
     if (!res.ok) { console.error(`halmos error: ${res.error}`); process.exit(2); }
     console.log(json ? JSON.stringify(res.results, null, 2) : bytecodeReport(res.results));
@@ -477,9 +484,18 @@ async function main() {
     process.on('SIGTERM', () => shutdown('SIGTERM'));
     process.on('SIGINT', () => shutdown('SIGINT'));
 
+    server.on('error', (e) => {
+      const msg = e.code === 'EADDRINUSE'
+        ? `port ${port} already in use (try --port 0 for an OS-assigned port)`
+        : e.message;
+      console.error(`${C.red}serve error:${C.reset} ${msg}`);
+      process.exit(2);
+    });
+
     server.listen(port, () => {
-      console.log(`${C.green}Dashboard:${C.reset} http://localhost:${port}`);
-      console.log(`${C.green}Badge:${C.reset}    http://localhost:${port}/badge.svg`);
+      const actualPort = server.address().port;
+      console.log(`${C.green}Dashboard:${C.reset} http://localhost:${actualPort}`);
+      console.log(`${C.green}Badge:${C.reset}    http://localhost:${actualPort}/badge.svg`);
       console.log(`\n${C.dim}Press Ctrl+C to stop${C.reset}`);
     });
     return; // don't exit — server keeps running

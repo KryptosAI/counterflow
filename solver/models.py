@@ -39,7 +39,7 @@ Soundness notes
 4. Inductive hypothesis assumes the FULL CONJUNCTION of selected invariants.
 """
 from z3 import (
-    Int, Array, IntSort, Select, Store, ForAll, Implies, And, Not,
+    Int, Array, IntSort, Select, Store, ForAll, Implies, And, Or, Not,
     Solver, sat, unsat, IntVal, K,
 )
 
@@ -500,42 +500,45 @@ def _goal(name, s, touched, model="erc20_pool"):
 
 # ── Inductive verification engine ───────────────────────────────────────
 
-def _build_pre_state(model):
+def _build_pre_state(model, sfx="pre"):
+    # sfx="pre" reproduces the historical variable names exactly; k-induction
+    # chains use sfx="s0".."s{k}" for per-link states.
     return State(
-        Int("totalAssets_pre"), Int("totalShares_pre"),
-        Array("balances_pre", IntSort(), IntSort()),
-        Array("shares_pre", IntSort(), IntSort()),
-        Array("allowances_pre", IntSort(), IntSort()),
-        Int("sumBalances_pre"), Int("sumShares_pre"),
-        locks=Array("locks_pre", IntSort(), IntSort()),
-        in_call=Int("in_call_pre"),
-        snapshot_total=Int("snapshot_total_pre"),
-        snapshot_sum_bal=Int("snapshot_sum_bal_pre"),
-        reserveX=Int("reserveX_pre"), reserveY=Int("reserveY_pre"),
-        lpSupply=Int("lpSupply_pre"),
-        lpBal=Array("lpBal_pre", IntSort(), IntSort()),
-        sumLpBal=Int("sumLpBal_pre"), initialK=Int("initialK_pre"),
-        collateral=Array("collateral_pre", IntSort(), IntSort()),
-        debt=Array("debt_pre", IntSort(), IntSort()),
-        totalCollateral=Int("totalCollateral_pre"), totalDebt=Int("totalDebt_pre"),
-        sumCollateral=Int("sumCollateral_pre"), sumDebt=Int("sumDebt_pre"),
-        liqThreshold=Int("liqThreshold_pre"),
-        staked=Array("staked_pre", IntSort(), IntSort()),
-        rewards_arr=Array("rewards_pre", IntSort(), IntSort()),
-        totalStaked=Int("totalStaked_pre"), sumStaked=Int("sumStaked_pre"),
-        rewardPool=Int("rewardPool_pre"), sumRewards=Int("sumRewards_pre"),
-        cross_in_progress=Int("cross_in_progress_pre"),
-        cross_snapshot_total=Int("cross_snapshot_total_pre"),
-        cross_snapshot_sum_bal=Int("cross_snapshot_sum_bal_pre"),
-        price=Int("price_pre"), twap_age=Int("twap_age_pre"),
-        timelock_time=Int("timelock_time_pre"),
+        Int(f"totalAssets_{sfx}"), Int(f"totalShares_{sfx}"),
+        Array(f"balances_{sfx}", IntSort(), IntSort()),
+        Array(f"shares_{sfx}", IntSort(), IntSort()),
+        Array(f"allowances_{sfx}", IntSort(), IntSort()),
+        Int(f"sumBalances_{sfx}"), Int(f"sumShares_{sfx}"),
+        locks=Array(f"locks_{sfx}", IntSort(), IntSort()),
+        in_call=Int(f"in_call_{sfx}"),
+        snapshot_total=Int(f"snapshot_total_{sfx}"),
+        snapshot_sum_bal=Int(f"snapshot_sum_bal_{sfx}"),
+        reserveX=Int(f"reserveX_{sfx}"), reserveY=Int(f"reserveY_{sfx}"),
+        lpSupply=Int(f"lpSupply_{sfx}"),
+        lpBal=Array(f"lpBal_{sfx}", IntSort(), IntSort()),
+        sumLpBal=Int(f"sumLpBal_{sfx}"), initialK=Int(f"initialK_{sfx}"),
+        collateral=Array(f"collateral_{sfx}", IntSort(), IntSort()),
+        debt=Array(f"debt_{sfx}", IntSort(), IntSort()),
+        totalCollateral=Int(f"totalCollateral_{sfx}"), totalDebt=Int(f"totalDebt_{sfx}"),
+        sumCollateral=Int(f"sumCollateral_{sfx}"), sumDebt=Int(f"sumDebt_{sfx}"),
+        liqThreshold=Int(f"liqThreshold_{sfx}"),
+        staked=Array(f"staked_{sfx}", IntSort(), IntSort()),
+        rewards_arr=Array(f"rewards_{sfx}", IntSort(), IntSort()),
+        totalStaked=Int(f"totalStaked_{sfx}"), sumStaked=Int(f"sumStaked_{sfx}"),
+        rewardPool=Int(f"rewardPool_{sfx}"), sumRewards=Int(f"sumRewards_{sfx}"),
+        cross_in_progress=Int(f"cross_in_progress_{sfx}"),
+        cross_snapshot_total=Int(f"cross_snapshot_total_{sfx}"),
+        cross_snapshot_sum_bal=Int(f"cross_snapshot_sum_bal_{sfx}"),
+        price=Int(f"price_{sfx}"), twap_age=Int(f"twap_age_{sfx}"),
+        timelock_time=Int(f"timelock_time_{sfx}"),
     )
 
 
-def _build_base_axioms(pre, invariants, touched, model):
+def _build_base_axioms(pre, invariants, touched, model, assume_invariants=True):
     base = []
-    for hyp in invariants:
-        base.append(_hypothesis(hyp, pre))
+    if assume_invariants:
+        for hyp in invariants:
+            base.append(_hypothesis(hyp, pre))
     u = Int("u")
     base.append(Implies(ForAll([u], Select(pre.bal, u) >= 0),
                         And([Select(pre.bal, i) <= pre.sum_bal for i in touched])))
@@ -637,3 +640,206 @@ def check_vacuity(func, invariants, model="erc20_pool"):
     s.add(base)
     s.add(guards)
     return s.check() == unsat
+
+
+# ── Init predicates + k-induction ───────────────────────────────────────
+#
+# Opt-in per binding:
+#     "init": ["all_zero"], "induction": {"k": 2}
+#
+# Base case (BMC): from init, for each depth 0..k-1, prove the invariant
+# holds — this discharges the initiation obligation that plain 1-induction
+# skips. A base violation is a REAL, reachable counterexample (stronger
+# evidence than a 1-induction step counterexample, whose pre-state may be
+# unreachable).
+#
+# Step: assuming ALL selected invariants hold at k consecutive states linked
+# by ANY function (the transition relation is the disjunction over all
+# functions — intermediate steps may use different functions), prove the
+# invariant at state k. Default k=1 is exactly the legacy engine.
+
+INIT_PREDS = {"all_zero"}
+
+
+def _apply_init(init_names, s):
+    """Constraints for a freshly-deployed state. all_zero zeroes all
+    accounting state (scalars, arrays, ghosts, locks) but leaves config
+    params (liqThreshold, initialK) free — they are constrained by the
+    model's base axioms instead."""
+    conds = []
+    for name in init_names:
+        name = name.strip()
+        if name != "all_zero":
+            raise ValueError(f"unknown init predicate: {name}")
+        # Constant-array equality (arr == K(0)) is quantifier-free and far
+        # cheaper than ForAll u. Select(arr, u) == 0.
+        z = K(IntSort(), IntVal(0))
+        conds.extend([
+            s.total == 0, s.total_shares == 0, s.sum_bal == 0, s.sum_shr == 0,
+            s.in_call == 0, s.snapshot_total == 0, s.snapshot_sum_bal == 0,
+            s.reserveX == 0, s.reserveY == 0, s.lpSupply == 0, s.sumLpBal == 0,
+            s.totalCollateral == 0, s.totalDebt == 0,
+            s.sumCollateral == 0, s.sumDebt == 0,
+            s.totalStaked == 0, s.sumStaked == 0,
+            s.rewardPool == 0, s.sumRewards == 0,
+            s.cross_in_progress == 0,
+            s.cross_snapshot_total == 0, s.cross_snapshot_sum_bal == 0,
+            s.price == 0, s.twap_age == 0, s.timelock_time == 0,
+            s.bal == z, s.shr == z, s.allow == z, s.locks == z,
+            s.lpBal == z, s.collateral == z, s.debt_arr == z,
+            s.staked == z, s.rewards_arr == z,
+        ])
+    return conds
+
+
+def _state_eq(a, b):
+    return [
+        a.total == b.total, a.total_shares == b.total_shares,
+        a.bal == b.bal, a.shr == b.shr, a.allow == b.allow,
+        a.sum_bal == b.sum_bal, a.sum_shr == b.sum_shr,
+        a.locks == b.locks, a.in_call == b.in_call,
+        a.snapshot_total == b.snapshot_total, a.snapshot_sum_bal == b.snapshot_sum_bal,
+        a.reserveX == b.reserveX, a.reserveY == b.reserveY,
+        a.lpSupply == b.lpSupply, a.lpBal == b.lpBal,
+        a.sumLpBal == b.sumLpBal, a.initialK == b.initialK,
+        a.collateral == b.collateral, a.debt_arr == b.debt_arr,
+        a.totalCollateral == b.totalCollateral, a.totalDebt == b.totalDebt,
+        a.sumCollateral == b.sumCollateral, a.sumDebt == b.sumDebt,
+        a.liqThreshold == b.liqThreshold,
+        a.staked == b.staked, a.rewards_arr == b.rewards_arr,
+        a.totalStaked == b.totalStaked, a.sumStaked == b.sumStaked,
+        a.rewardPool == b.rewardPool, a.sumRewards == b.sumRewards,
+        a.cross_in_progress == b.cross_in_progress,
+        a.cross_snapshot_total == b.cross_snapshot_total,
+        a.cross_snapshot_sum_bal == b.cross_snapshot_sum_bal,
+        a.price == b.price, a.twap_age == b.twap_age,
+        a.timelock_time == b.timelock_time,
+    ]
+
+
+def _link(funcs, sj, sj1, link_id):
+    """One transition step sj -> sj1 taken by ANY function in the binding.
+    Returns (constraint, touched, callvars)."""
+    actor, to, src, owner = (Int(f"actor_{link_id}"), Int(f"to_{link_id}"),
+                             Int(f"src_{link_id}"), Int(f"owner_{link_id}"))
+    amt, dy = Int(f"amt_{link_id}"), Int(f"dy_{link_id}")
+    domain = [actor >= 0, to >= 0, src >= 0, owner >= 0]
+    branches = []
+    for func in funcs:
+        fid = IntVal(func.get("func_id", 0))
+        guards = _apply_guards(func["guards"], sj, actor, to, src, owner, amt,
+                               fid, dy=dy)
+        post = _apply_effects(func["effects"], sj, actor, to, src, amt,
+                              fid, dy=dy)
+        branches.append(And(*(guards + _state_eq(post, sj1))))
+    cvars = {"actor": actor, "to": to, "src": src, "owner": owner,
+             "amt": amt, "dy": dy}
+    return And(Or(*branches), *domain), [actor, to, src], cvars
+
+
+def _extract_cex(m, pre, post, cvars):
+    ev = lambda t: str(m.eval(t, model_completion=True))
+    cex = {}
+    if cvars:
+        cex.update({
+            "actor": ev(cvars["actor"]), "to": ev(cvars["to"]),
+            "src": ev(cvars["src"]), "amt": ev(cvars["amt"]),
+            "dy": ev(cvars["dy"]),
+        })
+    else:
+        cex.update({"actor": "-", "to": "-", "src": "-", "amt": "-", "dy": "-"})
+    cex.update({
+        "totalAssets_pre": ev(pre.total), "totalAssets_post": ev(post.total),
+        "totalShares_pre": ev(pre.total_shares), "totalShares_post": ev(post.total_shares),
+        "sumBalances_pre": ev(pre.sum_bal), "sumBalances_post": ev(post.sum_bal),
+        "reserveX_pre": ev(pre.reserveX), "reserveX_post": ev(post.reserveX),
+        "totalCollateral_pre": ev(pre.totalCollateral),
+        "totalCollateral_post": ev(post.totalCollateral),
+        "totalDebt_pre": ev(pre.totalDebt), "totalDebt_post": ev(post.totalDebt),
+    })
+    if cvars:
+        cex["balance_actor_pre"] = ev(Select(pre.bal, cvars["actor"]))
+        cex["balance_actor_post"] = ev(Select(post.bal, cvars["actor"]))
+    return cex
+
+
+def check_k_induction(funcs, invariants, model, init_names, k):
+    """k-induction over the whole transition relation. Returns per-invariant
+    results: base (BMC from init, depths 0..k-1) then step (k-linked)."""
+    states = [_build_pre_state(model, sfx=f"s{i}") for i in range(k + 1)]
+    links, touched_per_link, cvars_per_link = [], [], []
+    for i in range(k):
+        c, touched, cvars = _link(funcs, states[i], states[i + 1], i)
+        links.append(c)
+        touched_per_link.append(touched)
+        cvars_per_link.append(cvars)
+
+    results = []
+    for inv in invariants:
+        # ── Base case: invariant holds at depths 0..k-1 from init ──
+        base_violation = None
+        base_unknown = False
+        for d in range(0, k):
+            s = Solver()
+            s.set("timeout", 30000)
+            s.add(_apply_init(init_names, states[0]))
+            s.add(_build_base_axioms(states[0], [], [], model,
+                                     assume_invariants=False))
+            for i in range(d):
+                s.add(links[i])
+                s.add(_build_base_axioms(states[i + 1], [], touched_per_link[i],
+                                         model, assume_invariants=False))
+            s.add(Not(_hypothesis(inv, states[d])))
+            r = s.check()
+            if r == sat:
+                m = s.model()
+                cvars = cvars_per_link[d - 1] if d > 0 else None
+                base_violation = {
+                    "depth": d,
+                    "cex": _extract_cex(m, states[max(d - 1, 0)], states[d], cvars),
+                }
+                break
+            elif r != unsat:
+                base_unknown = True
+                break
+
+        if base_violation is not None:
+            results.append({
+                "invariant": inv, "status": "violated",
+                "counterexample": base_violation["cex"],
+                "base": {"violated_at_depth": base_violation["depth"]},
+                "step": "skipped",
+            })
+            continue
+        if base_unknown:
+            results.append({"invariant": inv, "status": "unknown",
+                            "counterexample": None, "base": "unknown",
+                            "step": "skipped"})
+            continue
+
+        # ── Step: inv(s0..s_{k-1}) ∧ links ⟹ inv(s_k) ──
+        s = Solver()
+        s.set("timeout", 30000)
+        for i in range(k):
+            s.add(_build_base_axioms(states[i], invariants, touched_per_link[i],
+                                     model, assume_invariants=True))
+            s.add(links[i])
+        s.add(Not(_goal(inv, states[k], touched_per_link[k - 1], model)))
+        r = s.check()
+        if r == unsat:
+            results.append({"invariant": inv, "status": "proved",
+                            "counterexample": None, "base": "held",
+                            "step": "passed"})
+        elif r == sat:
+            m = s.model()
+            results.append({
+                "invariant": inv, "status": "violated",
+                "counterexample": _extract_cex(m, states[k - 1], states[k],
+                                               cvars_per_link[k - 1]),
+                "base": "held", "step": "failed",
+            })
+        else:
+            results.append({"invariant": inv, "status": "unknown",
+                            "counterexample": None, "base": "held",
+                            "step": "unknown"})
+    return {"invariants": results}

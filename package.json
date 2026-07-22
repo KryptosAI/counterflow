@@ -1,6 +1,6 @@
 {
   "name": "@kryptosai/counterflow",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Prove the contract, or reveal the exploit — formal verification for Solidity and DeFi smart contracts. AI-translated invariants proved or refuted by Z3 SMT, with Halmos bytecode backstop and Foundry/Echidna export.",
   "main": "src/verify.js",
   "bin": {
@@ -11,6 +11,7 @@
     "test": "node test/e2e.js",
     "bench": "node bench/run.js",
     "bytecode": "node src/cli.js bytecode HalmosTest",
+    "bytecode:expect": "node src/cli.js bytecode --expect",
     "defihack:clone": "bash bench/defihack/setup.sh",
     "defihack:bench": "node bench/defihack/runner.js",
     "all": "npm test && npm run bench && npm run defihack:bench && npm run bytecode",
@@ -80,6 +81,7 @@
     "halmos/src",
     "halmos/test",
     "halmos/foundry.toml",
+    "halmos/expectations.json",
     "slither/*.py",
     "valuepacket",
     "assets",

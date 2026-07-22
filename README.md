@@ -65,6 +65,7 @@ counterflow check examples/TokenPoolBuggy.binding.json # VIOLATED + exploit
 counterflow verify Contract.sol invariants.txt         # full AI pipeline (needs API key)
 counterflow check binding.json                         # deterministic, no LLM
 counterflow bytecode HalmosTest                        # 9 EVM symbolic tests
+counterflow bytecode --expect                          # gate: 3 PASS / 6 exploits must reproduce
 counterflow audit                                      # verify SHA-256 chain
 ```
 
@@ -87,7 +88,8 @@ counterflow audit                                      # verify SHA-256 chain
   Belt Finance      ($6.3M) arithmetic         → solvency violated
 
 3/3 ValuePacket contracts PROVED at pool level
-26/26 e2e tests pass
+9/9 Halmos scenarios match expectations (3 PASS / 6 exploits reproduced)
+35/35 e2e tests pass
 ```
 
 ## How it works
@@ -97,6 +99,10 @@ counterflow audit                                      # verify SHA-256 chain
 3. Deterministic Z3 core proves or produces a counterexample (trusted layer)
 4. Optional Halmos bytecode backstop closes spec-vs-implementation gap
 5. SHA-256 hash-chained audit log records every run
+6. Optional k-induction: add `"init": ["all_zero"]` and `"induction": {"k": 2}` to a
+   binding to also check initiation (BMC from a zero state — a base-case violation
+   is a *reachable* exploit) and prove the inductive step over k linked transitions
+   (`counterflow check` handles it automatically; default k=1 is unchanged)
 
 ## Counterflow vs the landscape
 

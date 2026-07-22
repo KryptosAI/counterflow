@@ -52,14 +52,35 @@ function render(result) {
   lines.push(`${C.dim}contract sha256:${C.reset} ${result.contractSha256.slice(0, 16)}…`);
   lines.push(`${C.dim}binding source:${C.reset} ${result.bindingSource}` +
     (result.llmUsage ? ` (${result.llmUsage.provider}/${result.llmUsage.model}, ${result.llmUsage.inputTokens}+${result.llmUsage.outputTokens} tok)` : ''));
+  if (result.solver.proof) {
+    const p = result.solver.proof;
+    lines.push(`${C.dim}proof:${C.reset} ${p.kind === 'k-induction' ? `k-induction (k=${p.k}, init: ${(p.init || []).join(', ')})` : '1-induction'}`);
+  }
   lines.push('');
+
+  if (Array.isArray(result.solver.invariants)) {
+    for (const r of result.solver.invariants) {
+      if (r.status === 'proved') {
+        lines.push(`    ${C.green}✓ proved${C.reset}   ${r.invariant} ${C.dim}(base held, step passed)${C.reset}`);
+      } else if (r.status === 'violated') {
+        const where = r.base && r.base.violated_at_depth !== undefined
+          ? `base case, depth ${r.base.violated_at_depth} (reachable from init)`
+          : 'inductive step';
+        lines.push(`    ${C.red}✗ violated${C.reset} ${r.invariant} ${C.dim}— ${where}${C.reset}`);
+        lines.push(...renderCex(r.counterexample));
+      } else {
+        lines.push(`    ${C.yellow}? unknown${C.reset}  ${r.invariant}`);
+      }
+    }
+    lines.push('');
+  }
 
   for (const fn of result.solver.functions) {
     lines.push(`  ${C.cyan}${C.bold}${fn.function}()${C.reset}`);
     if (fn.vacuous === true) {
       lines.push(`    ${C.yellow}⚠ vacuous — guards unsatisfiable; proofs are vacuous${C.reset}`);
     }
-    for (const r of fn.results) {
+    for (const r of fn.results || []) {
       if (r.status === 'proved') {
         lines.push(`    ${C.green}✓ proved${C.reset}   ${r.invariant}`);
       } else if (r.status === 'violated') {

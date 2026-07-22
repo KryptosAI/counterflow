@@ -76,6 +76,11 @@ function formatHalmosError() {
  * Returns { ok, results: [{ name, passed, counterexample }] }.
  */
 function runHalmos(testGlob) {
+  // '*' (or empty) means "all test contracts" — halmos's --contract filter is a
+  // regex, so a literal '*' is an invalid pattern and yields zero results.
+  // Omit the flag entirely instead (also picks up future test contracts).
+  const contractArgs = (testGlob && testGlob !== '*') ? ['--contract', testGlob] : [];
+
   const halmosBin = pickHalmos();
   if (halmosBin) {
     const build = spawnSync('forge', ['build'], { cwd: HALMOS_DIR, encoding: 'utf-8' });
@@ -83,7 +88,7 @@ function runHalmos(testGlob) {
       return { ok: false, error: `forge build failed:\n${build.stderr}` };
     }
 
-    const res = spawnSync(halmosBin, ['--root', HALMOS_DIR, '--contract', testGlob], {
+    const res = spawnSync(halmosBin, ['--root', HALMOS_DIR, ...contractArgs], {
       cwd: HALMOS_DIR,
       encoding: 'utf-8',
       maxBuffer: 50 * 1024 * 1024,
@@ -102,7 +107,7 @@ function runHalmos(testGlob) {
       return { ok: false, error: `forge build failed:\n${build.stderr}` };
     }
 
-    const res = spawnSync(python, ['-m', 'halmos', '--root', HALMOS_DIR, '--contract', testGlob], {
+    const res = spawnSync(python, ['-m', 'halmos', '--root', HALMOS_DIR, ...contractArgs], {
       cwd: HALMOS_DIR,
       encoding: 'utf-8',
       maxBuffer: 50 * 1024 * 1024,
@@ -122,7 +127,9 @@ function parseHalmosOutput(text) {
 
   const clean = text.replace(/\x1b\[[0-9;]*m/g, '');
   const lines = clean.split('\n');
-  let currentFail = null;
+  // halmos prints the counterexample block BEFORE the [FAIL] summary line,
+  // so buffer cex vars and attach them to the next [FAIL] (cleared on [PASS]).
+  let pendingCex = {};
 
   for (const line of lines) {
     const passMatch = line.match(/\[PASS\]\s+(\S+)/);
@@ -130,18 +137,19 @@ function parseHalmosOutput(text) {
 
     if (passMatch) {
       results.push({ name: passMatch[1], passed: true, counterexample: null });
-      currentFail = null;
+      pendingCex = {};
     } else if (failMatch) {
-      currentFail = { name: failMatch[1], passed: false, counterexample: {} };
-      results.push(currentFail);
+      results.push({ name: failMatch[1], passed: false, counterexample: pendingCex });
+      pendingCex = {};
     } else if (line.includes('Counterexample')) {
-    } else if (currentFail && line.trim()) {
+      // header line — variable assignments follow
+    } else if (line.trim()) {
       const stripped = line.trim();
       const eq = stripped.indexOf(' = ');
       if (eq > 0) {
         const key = stripped.substring(0, eq).trim();
         const val = stripped.substring(eq + 3).trim();
-        currentFail.counterexample[key] = val;
+        pendingCex[key] = val;
       }
     }
   }

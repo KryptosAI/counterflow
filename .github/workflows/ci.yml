@@ -25,20 +25,20 @@ jobs:
       - run: npm test
       - run: npm run bench
 
-  # Disabled until halmos setup time is acceptable: installing halmos and its
-  # toolchain adds several minutes to every CI run. Re-enable this job once
-  # halmos install time is cached or otherwise fast enough for every push.
-  #
-  # bytecode:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: '3.x'
-  #     - run: pip install halmos z3-solver
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: '20.x'
-  #     - run: npm install
-  #     - run: node src/cli.js bytecode HalmosTest
+  bytecode:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install halmos==0.3.3 z3-solver
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+      - run: npm install
+      # Expectations gate: safe references must PASS, known exploits must FAIL
+      # with a counterexample. Any regression or lost trophy fails the job.
+      - run: node src/cli.js bytecode --expect

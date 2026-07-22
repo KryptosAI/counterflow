@@ -2,6 +2,20 @@
 
 All notable changes to Counterflow will be documented in this file.
 
+## [0.5.0] — 2026-07-22
+
+### Added
+
+- **K-induction (opt-in)**: bindings may add `"init": ["all_zero"]` and `"induction": {"k": 2}` (k ≤ 5). The solver then checks initiation by bounded model checking from a zero deploy state (a base-case violation is a *reachable* exploit, reported with its depth) and proves the step over k linked transitions of the full multi-function transition relation. Default k=1 is byte-identical to previous behavior. Output carries `proof` metadata for both modes.
+- **Halmos expectations harness**: `halmos/expectations.json` is the versioned registry of the 9 bytecode scenarios (3 safe references must PASS, 6 exploits must FAIL with a counterexample). `counterflow bytecode --expect` / `bench/halmos-check.js` gates on it: regressions, lost trophies, and unregistered scenarios all fail the check. Runs in CI as a required job.
+- `serve --port 0` support (OS-assigned ephemeral port; CLI prints the actual bound port) plus a clean EADDRINUSE error.
+- e2e: 9 new tests (halmos comparator ×4, k-induction ×5) and the serve test now uses an ephemeral port — 35/35 pass.
+
+### Fixed
+
+- `runHalmos('*')` passed a literal `*` to halmos's regex contract filter, silently producing zero results; `*`/empty now omits the filter (runs all test contracts).
+- Halmos counterexample parsing: halmos prints the cex block *before* the `[FAIL]` line; vars were mis-attributed to the previous result. Parser now buffers and attaches correctly.
+
 ## [0.4.2] — 2026-07-22
 
 ### Fixed

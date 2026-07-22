@@ -1,0 +1,15 @@
+{
+  "description": "Expected Halmos outcomes for halmos/test/HalmosTest.t.sol. PASS = safe reference must keep passing. FAIL = exploit must stay reproducible (with a counterexample). Any mismatch fails the check: a FAIL-turned-PASS is a lost trophy (halmos or the contract changed), a PASS-turned-FAIL is a regression.",
+  "halmos_version": "0.3.3",
+  "scenarios": [
+    { "name": "check_TokenPool_withdraw_noUnderflow", "expect": "pass", "class": "reference", "why": "safe pool: withdraw can never drive balance below its previous value" },
+    { "name": "check_TokenPoolBuggy_withdraw_noUnderflow", "expect": "fail", "class": "underflow-drain", "why": "missing balance check: withdraw underflows the balance" },
+    { "name": "check_SafeVault_withdraw_shareIntegrity", "expect": "pass", "class": "reference", "why": "safe vault: totalShares tracks totalAssets across withdraw" },
+    { "name": "check_SafeVault_accounting_multiOp", "expect": "pass", "class": "reference", "why": "safe vault: multi-op accounting keeps totals non-negative" },
+    { "name": "check_UnbackedMintVault_ownerMint", "expect": "fail", "class": "unbacked-mint", "why": "owner mint inflates shares without assets: backing violated" },
+    { "name": "check_BurnDesyncVault_burn", "expect": "fail", "class": "accounting-desync", "why": "burn forgets totalShares: shares outgrow assets" },
+    { "name": "check_ApprovalDrain_allowance_respected", "expect": "fail", "class": "approval-drain", "why": "unchecked allowance math: approve(1) allows draining the full balance" },
+    { "name": "check_ReentrantVault_backing_violated", "expect": "fail", "class": "reentrancy", "why": "transfer-before-state-update lets the attacker drain without burning shares" },
+    { "name": "check_FlashLoanPool_repayment_required", "expect": "fail", "class": "flash-loan", "why": "flash loan never checks repayment: pool drained during callback" }
+  ]
+}

@@ -308,23 +308,121 @@ function run() {
   });
 
   console.log('serve');
-  t('serve responds on /health and shuts down', () => {
+  t('serve responds on /health (ephemeral port) and shuts down', () => {
     const cli = path.join(__dirname, '..', 'src', 'cli.js');
-    const port = 41337;
     const script = [
-      `node "${cli}" serve --port ${port} >/dev/null 2>&1 &`,
+      'TMPF=$(mktemp)',
+      `node "${cli}" serve --port 0 > "$TMPF" 2>&1 &`,
       'SRV=$!',
-      'trap "kill $SRV 2>/dev/null" EXIT',
+      'trap "kill $SRV 2>/dev/null; rm -f $TMPF" EXIT',
+      'PORT=""',
+      'for i in $(seq 1 40); do PORT=$(sed -n \'s/.*localhost:\\([0-9]*\\).*/\\1/p\' "$TMPF" | head -1); [ -n "$PORT" ] && break; sleep 0.25; done',
       'OUT=""',
-      `for i in $(seq 1 40); do OUT=$(curl -s --max-time 1 http://localhost:${port}/health 2>/dev/null) && [ -n "$OUT" ] && break; sleep 0.25; done`,
+      'if [ -n "$PORT" ]; then for i in $(seq 1 20); do OUT=$(curl -s --max-time 1 "http://localhost:$PORT/health" 2>/dev/null) && [ -n "$OUT" ] && break; sleep 0.25; done; fi',
       'kill $SRV 2>/dev/null',
       'wait $SRV 2>/dev/null',
       'trap - EXIT',
-      'printf %s "$OUT"',
+      'rm -f "$TMPF"',
+      'printf \'%s %s\' "$PORT" "$OUT"',
     ].join('\n');
     const r = spawnSync('bash', ['-c', script], { encoding: 'utf-8', timeout: 20000 });
-    assert.ok(r.stdout.includes('"status":"ok"'),
-      `expected /health {"status":"ok"}, got stdout="${r.stdout}" stderr="${r.stderr}"`);
+    assert.ok(/^[0-9]+ \{"status":"ok"\}/.test(r.stdout),
+      `expected "<port> {\\"status\\":\\"ok\\"}", got stdout="${r.stdout}" stderr="${r.stderr}"`);
+  });
+
+  console.log('halmos expectations comparator');
+  t('all expectations matched', () => {
+    const { compareExpectations } = require('../src/halmos-expect');
+    const expected = [
+      { name: 'check_safe', expect: 'pass', class: 'reference' },
+      { name: 'check_exploit', expect: 'fail', class: 'underflow-drain' },
+    ];
+    const actual = [
+      { name: 'check_safe(uint256)', passed: true, counterexample: null },
+      { name: 'check_exploit(uint256)', passed: false, counterexample: { amt: '5' } },
+    ];
+    const r = compareExpectations(expected, actual);
+    assert.strictEqual(r.ok, true);
+    assert.strictEqual(r.matches.length, 2);
+    assert.strictEqual(r.mismatches.length, 0);
+  });
+  t('regression detected: expected pass but failed', () => {
+    const { compareExpectations } = require('../src/halmos-expect');
+    const r = compareExpectations(
+      [{ name: 'check_safe', expect: 'pass', class: 'reference' }],
+      [{ name: 'check_safe', passed: false, counterexample: { amt: '1' } }],
+    );
+    assert.strictEqual(r.ok, false);
+    assert.ok(r.mismatches[0].problem.includes('REGRESSION'));
+  });
+  t('lost trophy detected: expected fail but passed', () => {
+    const { compareExpectations } = require('../src/halmos-expect');
+    const r = compareExpectations(
+      [{ name: 'check_exploit', expect: 'fail', class: 'x' }],
+      [{ name: 'check_exploit', passed: true, counterexample: null }],
+    );
+    assert.strictEqual(r.ok, false);
+    assert.ok(r.mismatches[0].problem.includes('LOST TROPHY'));
+  });
+  t('missing and unregistered scenarios detected', () => {
+    const { compareExpectations } = require('../src/halmos-expect');
+    const r = compareExpectations(
+      [{ name: 'check_gone', expect: 'pass', class: 'reference' }],
+      [{ name: 'check_new', passed: true, counterexample: null }],
+    );
+    assert.strictEqual(r.ok, false);
+    assert.strictEqual(r.mismatches.length, 2);
+    assert.ok(r.mismatches.some((m) => m.problem.includes('not found')));
+    assert.ok(r.mismatches.some((m) => m.problem.includes('unregistered')));
+  });
+
+  console.log('k-induction');
+  t('TokenPool proves at k=2 with init', () => {
+    const b = JSON.parse(JSON.stringify(correct));
+    b.init = ['all_zero'];
+    b.induction = { k: 2 };
+    const r = runSolver(b);
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.output.verdict, 'proved');
+    assert.strictEqual(r.output.proof.kind, 'k-induction');
+    assert.strictEqual(r.output.proof.k, 2);
+    assert.deepStrictEqual(r.output.proof.init, ['all_zero']);
+    for (const inv of r.output.invariants) {
+      assert.strictEqual(inv.status, 'proved');
+      assert.strictEqual(inv.base, 'held');
+      assert.strictEqual(inv.step, 'passed');
+    }
+  });
+  t('TokenPoolBuggy violated at k=2 — base case finds the reachable bug', () => {
+    const b = JSON.parse(JSON.stringify(buggy));
+    b.init = ['all_zero'];
+    b.induction = { k: 2 };
+    const r = runSolver(b);
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.output.verdict, 'violated');
+    const nb = r.output.invariants.find((x) => x.invariant === 'nonneg_balance');
+    assert.strictEqual(nb.status, 'violated');
+    assert.strictEqual(nb.base.violated_at_depth, 1);
+    assert.ok(nb.counterexample, 'expected a base-case counterexample');
+  });
+  t('k>1 without init is a clean error', () => {
+    const b = JSON.parse(JSON.stringify(correct));
+    b.induction = { k: 2 };
+    const r = runSolver(b);
+    assert.strictEqual(r.ok, false);
+  });
+  t('unknown init predicate is a clean error', () => {
+    const b = JSON.parse(JSON.stringify(correct));
+    b.init = ['moon'];
+    b.induction = { k: 2 };
+    const r = runSolver(b);
+    assert.strictEqual(r.ok, false);
+  });
+  t('k=1 default output carries 1-induction proof metadata', () => {
+    const r = runSolver(correct);
+    assert.ok(r.ok, r.error);
+    assert.strictEqual(r.output.proof.kind, '1-induction');
+    assert.strictEqual(r.output.proof.k, 1);
   });
 
   console.log('');
