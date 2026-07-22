@@ -2,6 +2,12 @@
 
 All notable changes to Counterflow will be documented in this file.
 
+## [0.4.2] — 2026-07-22
+
+### Fixed
+
+- `postinstall` shell-quoting bug that made `npm install @kryptosai/counterflow` fail: backticks in the message were interpreted as shell command substitution by npm's `sh -c` wrapper. Message is now single-quote-safe. 0.4.1 installs were broken; use 0.4.2+.
+
 ## [0.4.1] — 2026-07-22
 
 ### Added

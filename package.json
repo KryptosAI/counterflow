@@ -1,13 +1,13 @@
 {
   "name": "@kryptosai/counterflow",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Prove the contract, or reveal the exploit — formal verification for Solidity and DeFi smart contracts. AI-translated invariants proved or refuted by Z3 SMT, with Halmos bytecode backstop and Foundry/Echidna export.",
   "main": "src/verify.js",
   "bin": {
     "counterflow": "src/cli.js"
   },
   "scripts": {
-    "postinstall": "node -e \"if(process.env.CI||process.env.COUNTERFLOW_SKIP_POSTINSTALL||!process.stdout.isTTY)process.exit(0);console.log('Counterflow installed — run `counterflow doctor` to check Python 3 + z3-solver setup.')\"",
+    "postinstall": "node -e 'if(process.env.CI||process.env.COUNTERFLOW_SKIP_POSTINSTALL||!process.stdout.isTTY)process.exit(0);console.log(\"Counterflow installed. Run counterflow doctor to check Python 3 + z3-solver setup.\")'",
     "test": "node test/e2e.js",
     "bench": "node bench/run.js",
     "bytecode": "node src/cli.js bytecode HalmosTest",
