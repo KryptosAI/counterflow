@@ -2,6 +2,14 @@
 
 All notable changes to Counterflow will be documented in this file.
 
+## [0.4.1] — 2026-07-22
+
+### Added
+
+- CI-safe `postinstall` hint pointing new users at `counterflow doctor` (silently exits when `CI` is set, output is not a TTY, or `COUNTERFLOW_SKIP_POSTINSTALL` is set)
+- e2e coverage: `completeness` scoring tests (covered/uncovered/graceful-failure) and a `serve` dashboard `/health` smoke test — 26/26 tests pass
+- TROPHIES.md: added OracleManipulation (`oracle_integrity`) and GovernanceNoTimelock (`solvency`) trophy rows, completing the 16-case synthetic benchmark table
+
 ## [0.4.0] — 2026-07-21
 
 ### State Model (5 types)

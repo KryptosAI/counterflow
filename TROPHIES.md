@@ -13,6 +13,8 @@ Vulnerabilities caught by Counterflow formal verification. Each entry includes t
 | AMMPriceManipulation | price-manipulation | nonneg_reserves | — |
 | LendingUnbackedBorrow | unbacked-borrow | overcollateralized | — |
 | StakingInfiniteReward | infinite-reward | nonneg_balance | — |
+| OracleManipulation | oracle-manipulation | oracle_integrity | — |
+| GovernanceNoTimelock | missing-timelock | solvency | — |
 
 ## DeFiHackLabs Reproductions (5 cases, $261M+ total)
 

@@ -87,7 +87,7 @@ counterflow audit                                      # verify SHA-256 chain
   Belt Finance      ($6.3M) arithmetic         → solvency violated
 
 3/3 ValuePacket contracts PROVED at pool level
-22/22 e2e tests pass
+26/26 e2e tests pass
 ```
 
 ## How it works

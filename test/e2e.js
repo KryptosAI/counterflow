@@ -263,6 +263,70 @@ function run() {
     assert.ok(svg.includes('<svg'), 'badge should contain <svg');
   });
 
+  console.log('completeness');
+  t('analyzeCompleteness scores coverage', () => {
+    const { analyzeCompleteness } = require('../src/completeness');
+    const report = {
+      state_variables: [
+        { name: 'balances', classification: 'balance', written_by: ['deposit', 'withdraw'] },
+        { name: 'totalAssets', classification: 'total', written_by: [{ name: 'deposit' }] },
+        { name: 'owner', classification: 'other', written_by: [] },
+      ],
+    };
+    const binding = {
+      functions: [
+        { name: 'deposit', effects: ['bal_add_amt'] },
+        { name: 'withdraw', effects: ['bal_sub_amt'] },
+      ],
+    };
+    const r = analyzeCompleteness(report, binding);
+    assert.strictEqual(r.totalTracked, 2);
+    assert.strictEqual(r.covered, 2);
+    assert.strictEqual(r.score, 100);
+    assert.strictEqual(r.scoreLabel, 'PASS');
+  });
+  t('analyzeCompleteness flags uncovered variables', () => {
+    const { analyzeCompleteness } = require('../src/completeness');
+    const report = {
+      state_variables: [
+        { name: 'balances', classification: 'balance', written_by: ['withdraw'] },
+        { name: 'debt', classification: 'debt', written_by: ['borrow'] },
+      ],
+    };
+    const binding = { functions: [{ name: 'withdraw', effects: ['bal_sub_amt'] }] };
+    const r = analyzeCompleteness(report, binding);
+    assert.strictEqual(r.score, 50);
+    assert.strictEqual(r.scoreLabel, 'FAIL');
+    assert.deepStrictEqual(r.uncoveredVars, ['debt']);
+    assert.strictEqual(r.warnings.length, 1);
+  });
+  t('checkCompleteness fails gracefully on bad input', () => {
+    const { checkCompleteness } = require('../src/completeness');
+    const r = checkCompleteness('/nonexistent/Contract.sol', {}, null);
+    assert.strictEqual(r.ok, false);
+    assert.ok(r.error, 'should return an error message');
+  });
+
+  console.log('serve');
+  t('serve responds on /health and shuts down', () => {
+    const cli = path.join(__dirname, '..', 'src', 'cli.js');
+    const port = 41337;
+    const script = [
+      `node "${cli}" serve --port ${port} >/dev/null 2>&1 &`,
+      'SRV=$!',
+      'trap "kill $SRV 2>/dev/null" EXIT',
+      'OUT=""',
+      `for i in $(seq 1 40); do OUT=$(curl -s --max-time 1 http://localhost:${port}/health 2>/dev/null) && [ -n "$OUT" ] && break; sleep 0.25; done`,
+      'kill $SRV 2>/dev/null',
+      'wait $SRV 2>/dev/null',
+      'trap - EXIT',
+      'printf %s "$OUT"',
+    ].join('\n');
+    const r = spawnSync('bash', ['-c', script], { encoding: 'utf-8', timeout: 20000 });
+    assert.ok(r.stdout.includes('"status":"ok"'),
+      `expected /health {"status":"ok"}, got stdout="${r.stdout}" stderr="${r.stderr}"`);
+  });
+
   console.log('');
   if (failures) { console.error(`${failures} test(s) failed`); process.exit(1); }
   console.log('all tests passed');
