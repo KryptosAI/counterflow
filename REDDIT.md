@@ -1,17 +1,23 @@
-# Counterflow v0.4.0 — LLM-translated, Z3-proved invariant checking (MIT)
+# Counterflow v0.5.1 — LLM-translated, Z3-proved invariant checking, now as a GitHub Action (MIT)
 
-I'm sharing Counterflow v0.4.0, an open-core formal verification tool for Solidity smart contracts. It takes English invariants, translates them via LLM to a structured binding, then runs deterministic Z3 SMT and Halmos symbolic execution to prove safety or produce counterexamples.
+I'm sharing Counterflow, an open-core formal verification tool for Solidity smart contracts. It takes English invariants, translates them via LLM to a structured binding, then runs deterministic Z3 SMT and Halmos symbolic execution to prove safety or produce counterexamples. v0.5.1 adds a GitHub Action (3 lines of YAML) and a live, CI-regenerated verification leaderboard.
+
+```yaml
+- uses: KryptosAI/counterflow-action@v1
+  with:
+    binding: path/to/Contract.binding.json
+```
+
+Leaderboard: https://kryptosai.github.io/counterflow/
+Repo: https://github.com/KryptosAI/counterflow
 
 ## How it compares to existing tools
-
-Counterflow occupies a different spot in the verification landscape than Certora, Halmos, or Kontrol. Here's how they stack up:
 
 ### Certora Prover
 - **License:** GPL-3.0 (Counterflow: MIT)
 - **Input:** CVL — a custom specification language you must learn
 - **Proof level:** SMT-based, similar to Counterflow's Z3 core
-- **Setup:** Java + Gradle
-- **Where Counterflow wins:** No DSL — you write invariants in English. The LLM handles translation, you review the binding. Certora also locks verification in their cloud; Counterflow runs fully local with a SHA-256 hash-chained audit log.
+- **Where Counterflow wins:** No DSL — you write invariants in English. The LLM handles translation, you review the binding. Certora locks verification in their cloud; Counterflow runs fully local with a SHA-256 hash-chained audit log.
 - **Where Certora wins:** Mature tooling, scene linking for multi-contract, battle-tested on major protocols. Unlimited model expressiveness vs. Counterflow's 5 vocabulary-bound models (extensible but bounded by design).
 
 ### Halmos (a16z)
@@ -26,8 +32,8 @@ Counterflow occupies a different spot in the verification landscape than Certora
 - **Input:** Foundry test functions, like Halmos
 - **Proof level:** KEVM bytecode symbolic execution (K framework)
 - **Setup:** K framework + Nix (complex)
-- **Where Counterflow wins:** Zero setup complexity (npm + Python). English invariants instead of hand-written algebraic test functions. The LLM translation layer means non-formal-methods engineers can write specifications.
-- **Where Kontrol wins:** Unlimited expressiveness via K framework. Full EVM semantics at the bytecode level. Strong for complex multi-contract interactions.
+- **Where Counterflow wins:** Zero setup complexity (npm + Python). English invariants instead of hand-written algebraic test functions.
+- **Where Kontrol wins:** Unlimited expressiveness via K framework. Full EVM semantics at the bytecode level.
 
 ### Counterflow's unique position
 
@@ -37,11 +43,17 @@ Counterflow occupies a different spot in the verification landscape than Certora
 
 3. **Deterministic reproduction.** Every benchmark result, including 5/5 DeFiHackLabs reproductions ($261M+), runs without an LLM. The bindings are pre-reviewed JSON files. Anyone can reproduce the results with `npm run bench`.
 
-4. **Vocabulary-bound, extensible.** The 5 model types (erc20_pool, amm_pool, lending_pool, staking_pool, cross_contract) with 23 guards, 40 effects, and 29 invariants constrain the translation problem so the LLM rarely hallucinates. The vocabulary is extensible — you can add custom guards and effects to the trusted core.
+4. **Vocabulary-bound, extensible.** The 5 model types with 27 guards, 43 effects, and 33 invariants constrain the translation problem so the LLM rarely hallucinates. The vocabulary is extensible by design.
 
-5. **MIT license.** Everything ships under MIT — the CLI, the Z3 core, the validator, the benchmarks, the DeFiHackLabs corpus. The commercial layer (hosted pipeline, CI, dashboards) is separate.
+5. **Opt-in k-induction.** `"init": ["all_zero"]` + `"induction": {"k": 2}` turns on initiation checking (BMC from deploy state — violations are *reachable* by construction) plus a k-step inductive proof over the full transition relation.
 
-## What v0.4.0 ships
+6. **MIT license.** The CLI, the Z3 core, the validator, the benchmarks, the DeFiHackLabs corpus, and the GitHub Action. The commercial layer (hosted pipeline, dashboards, proof storage) is separate.
+
+## The leaderboard already caught a real bug
+
+The Pages leaderboard re-verifies everything on every push and only publishes green. Its first run flagged that 3 "PROVED" real-contract bindings (Uniswap V2, Aave, Compound) were actually VIOLATED under the current vocabulary — the marketing claim had drifted as the model evolved. Root cause: `constant_product` and `overcollateralized` need post-state-aware guards the vocabulary can't yet express (and aggregate solvency isn't even a real Aave invariant). The bindings are corrected, the descriptions say why, and the claim is now CI-enforced. This is exactly why you build expectation gates.
+
+## What ships
 
 ```
 npm install @kryptosai/counterflow
@@ -49,22 +61,20 @@ npm install @kryptosai/counterflow
 counterflow check examples/TokenPool.binding.json       # PROVED
 counterflow check examples/TokenPoolBuggy.binding.json  # VIOLATED + cex
 counterflow verify Contract.sol invariants.txt          # full AI pipeline
-counterflow bytecode HalmosTest                         # 9 EVM symbolic tests
+counterflow bytecode --expect                            # 9/9 halmos expectations gate
 counterflow doctor                                       # check deps
-counterflow leaderboard                                  # view verified contracts
 ```
 
-- 12/12 benchmark, 5/5 DeFiHackLabs ($261M+), 3/3 real contracts, 9/9 Halmos bytecode
-- New CLI: doctor, leaderboard, badge, serve, completeness, mutate
-- New docs: TROPHIES.md, LEADERBOARD.md, SECURITY.md
+- 16/16 benchmark, 5/5 DeFiHackLabs ($261M+), 3/3 real contracts, 9/9 Halmos scenarios in CI, 35/35 e2e tests
+- GitHub Action + live leaderboard + opt-in k-induction
 
 ## Limitations (honest)
 
 - Proofs are over the binding abstraction, not the Solidity source directly
 - The Z3 model uses unbounded integers — does not model EVM mod-2^256 wrap
 - Gas is not modeled
-- Vocabulary is bounded — complex governance or oracle logic needs custom extensions
+- Vocabulary is bounded — post-state-aware guards (post-borrow health, swap-output formulas) are on the roadmap
+- Default k=1 proofs are preservation-only (no initiation check) unless you opt into init + k-induction
 - The LLM translation layer requires human review (by design)
-- Multi-contract proofs limited to the cross_contract vocabulary
 
-Happy to answer questions. Repo: https://github.com/KryptosAI/counterflow
+Happy to answer questions.
