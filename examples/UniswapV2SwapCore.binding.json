@@ -1,0 +1,22 @@
+{
+  "model": "amm_pool",
+  "description": "Uniswap V2 swap core — swaps gated by swap_k_exact_in / swap_k_exact_out (new in v0.6.0) and add liquidity, without removeLiquidity. With LP removal excluded, the constant_product invariant (reserveX * reserveY >= initialK) is provable. The full binding with removeLiquidity is UniswapV2Swap.binding.json — it omits constant_product because proportional LP removal scales k below the initial reference point (future vocab: proportional-removal guard).",
+  "functions": [
+    {
+      "name": "swap",
+      "guards": ["swap_k_exact_out", "reserveX_ge_dx", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "reserveX_sub", "reserveY_add", "reentrancy_lock_release"]
+    },
+    {
+      "name": "swapExactInput",
+      "guards": ["swap_k_exact_in", "dy_gt_0", "reserveY_ge_dy", "not_locked"],
+      "effects": ["reentrancy_lock_acquire", "reserveX_add", "reserveY_sub", "reentrancy_lock_release"]
+    },
+    {
+      "name": "addLiquidity",
+      "guards": ["amt_gt_0", "dy_gt_0", "not_locked"],
+      "effects": ["reserveX_add", "reserveY_add", "lp_mint_amt"]
+    }
+  ],
+  "invariants": ["nonneg_reserves", "nonneg_lp", "lp_integrity", "constant_product", "reentrancy_safe"]
+}

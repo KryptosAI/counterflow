@@ -58,7 +58,7 @@ if (fs.existsSync(dhPath)) {
 }
 
 suites.push(runSuite('Real contract models', [
-  'UniswapV2Swap', 'AaveLending', 'CompoundCToken',
+  'UniswapV2Swap', 'UniswapV2SwapCore', 'AaveLending', 'CompoundCToken',
 ].map((n) => ({
   name: n, class: 'real-contract',
   binding: path.join(ROOT, 'examples', `${n}.binding.json`),

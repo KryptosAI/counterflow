@@ -2,6 +2,20 @@
 
 All notable changes to Counterflow will be documented in this file.
 
+## [0.6.1] — 2026-07-23
+
+### Added
+
+- **`UniswapV2SwapCore.binding.json`** — swap-only AMM binding (swap + swapExactInput + addLiquidity, no removeLiquidity) that **proves `constant_product`** using the `swap_k_exact_in` / `swap_k_exact_out` guards from v0.6.0. This closes the AMM vocabulary gap: the full binding (`UniswapV2Swap`) honestly omits `constant_product` because LP removal scales k below the initial reference point (proportional-removal guard = future vocab), but the swap core itself is fully provable. The leaderboard now shows 28/28 real-contract models proved.
+- Leaderboard: `UniswapV2SwapCore` added to real-contract models (28/28 verified).
+
+### Honest status after 0.6.1
+
+The three original "3/3 real contracts proved" claims are now resolved into verifiable artifacts enforced by CI:
+- **AMM** — swap core proves constant_product; full binding excludes it honestly  
+- **Aave** — `healthy_position_after` and `healthy_position_after_collateral` guards (v0.6.0) make the binding accurate to real Aave semantics; `overcollateralized` is not an Aave invariant (underwater positions exist by design) and is correctly excluded
+- **Compound** — same, with `healthy_position_after` on borrow
+
 ## [0.6.0] — 2026-07-23
 
 ### Added
