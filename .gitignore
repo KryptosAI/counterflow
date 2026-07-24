@@ -12,3 +12,4 @@ audit.jsonl
 *.tgz
 .DS_Store
 tmp_*.json
+docs/

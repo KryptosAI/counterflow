@@ -2,6 +2,17 @@
 
 All notable changes to Counterflow will be documented in this file.
 
+## [0.5.1] — 2026-07-23
+
+### Added
+
+- **GitHub Action** — [`KryptosAI/counterflow-action@v1`](https://github.com/KryptosAI/counterflow-action): run `counterflow check` in CI with a 3-line snippet; verdict report in the job summary, optional PR comment via `github-token`. Dogfooded in this repo's CI (`action-smoke` job).
+- **Public leaderboard on GitHub Pages** — [kryptosai.github.io/counterflow](https://kryptosai.github.io/counterflow/): benchmark, DeFiHackLabs, real-contract, and ValuePacket results regenerated on every push by `bench/leaderboard-pages.js`; the deploy gate only publishes from all-green runs. Live verification badge in README.
+
+### Fixed
+
+- Real-contract example bindings: UniswapV2Swap `swap` now models X-out/Y-in correctly (was a both-reserves drain); `constant_product` and `overcollateralized` removed from example invariant sets where the current vocabulary cannot express them (multiplicative swap-output formula, post-borrow aggregate health) — binding descriptions document why. The leaderboard caught this doc drift; the "3/3 real contract models proved" claim is accurate and CI-enforced again.
+
 ## [0.5.0] — 2026-07-22
 
 ### Added

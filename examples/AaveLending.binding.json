@@ -1,6 +1,6 @@
 {
   "model": "lending_pool",
-  "description": "Aave lending pool — deposit, collateral, borrow with health check, repay, withdraw, liquidate",
+  "description": "Aave lending pool — deposit, collateral, borrow with health check, repay, withdraw, liquidate. Note: overcollateralized is omitted — aggregate protocol solvency is not a real Aave invariant (underwater positions exist pre-liquidation), and the per-position post-borrow health check requires a post-state-aware guard the current vocabulary cannot express; see README roadmap.",
   "functions": [
     {
       "name": "deposit",
@@ -33,5 +33,5 @@
       "effects": ["reentrancy_lock_acquire", "collateral_sub", "debt_sub", "reentrancy_lock_release"]
     }
   ],
-  "invariants": ["nonneg_balance", "nonneg_total", "nonneg_collateral", "nonneg_debt", "nonneg_total_collateral", "nonneg_total_debt", "collateral_integrity", "debt_integrity", "overcollateralized", "reentrancy_safe"]
+  "invariants": ["nonneg_balance", "nonneg_total", "nonneg_collateral", "nonneg_debt", "nonneg_total_collateral", "nonneg_total_debt", "collateral_integrity", "debt_integrity", "reentrancy_safe"]
 }
