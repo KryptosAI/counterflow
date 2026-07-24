@@ -206,7 +206,7 @@ function run() {
   console.log('vocabulary gate');
   t('counts match documented totals', () => {
     const { GUARDS, EFFECTS, INVARIANTS } = require('../src/translate');
-    assert.strictEqual(GUARDS.length, 27);
+    assert.strictEqual(GUARDS.length, 31);
     assert.strictEqual(EFFECTS.length, 43);
     assert.strictEqual(INVARIANTS.length, 33);
   });

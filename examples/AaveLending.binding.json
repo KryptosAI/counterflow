@@ -1,6 +1,6 @@
 {
   "model": "lending_pool",
-  "description": "Aave lending pool — deposit, collateral, borrow with health check, repay, withdraw, liquidate. Note: overcollateralized is omitted — aggregate protocol solvency is not a real Aave invariant (underwater positions exist pre-liquidation), and the per-position post-borrow health check requires a post-state-aware guard the current vocabulary cannot express; see README roadmap.",
+  "description": "Aave lending pool — deposit, collateral, borrow with health check, repay, withdraw, liquidate. Note: healthy_position_after and healthy_position_after_collateral guards (new in v0.6.0) now enforce post-state per-actor health on borrow and withdrawCollateral, matching real Aave semantics. overcollateralized remains omitted because the aggregate invariant does not hold when underwater positions exist (which real Aave allows pre-liquidation) — and adding all_positions_healthy as a universal invariant would be falsified by withdrawCollateral without this guard.",
   "functions": [
     {
       "name": "deposit",
@@ -14,7 +14,7 @@
     },
     {
       "name": "borrow",
-      "guards": ["amt_gt_0", "healthy_position", "not_locked"],
+      "guards": ["amt_gt_0", "healthy_position", "not_locked", "healthy_position_after"],
       "effects": ["reentrancy_lock_acquire", "debt_add", "bal_add_amt", "reentrancy_lock_release"]
     },
     {
@@ -24,7 +24,7 @@
     },
     {
       "name": "withdrawCollateral",
-      "guards": ["amt_gt_0", "collateral_ge_amt", "healthy_position", "not_locked"],
+      "guards": ["amt_gt_0", "collateral_ge_amt", "healthy_position", "not_locked", "healthy_position_after_collateral"],
       "effects": ["reentrancy_lock_acquire", "collateral_sub", "bal_add_amt", "reentrancy_lock_release"]
     },
     {

@@ -58,12 +58,15 @@ GUARDS = {
     "dx_gt_0", "dy_gt_0", "reserveX_ge_dx", "reserveY_ge_dy", "lp_ge_amt",
     # Lending
     "collateral_ge_amt", "debt_ge_amt", "healthy_position",
+    "healthy_position_after", "healthy_position_after_collateral",
     # Staking
     "staked_ge_amt", "rewards_ge_amt",
     # Cross-contract
     "cross_not_in_progress", "cross_snapshot_match",
     # Oracle
     "price_ge_min", "price_valid", "twap_stale",
+    # AMM — post-state product
+    "swap_k_exact_in", "swap_k_exact_out",
     # Governance
     "timelock_expired",
 }
@@ -208,6 +211,12 @@ def _apply_guards(guard_names, s, actor, to, src, owner, amt,
         elif g == "healthy_position":
             conds.append(Select(s.collateral, actor) * s.liqThreshold
                          >= Select(s.debt_arr, actor) * BPB)
+        elif g == "healthy_position_after":
+            conds.append(Select(s.collateral, actor) * s.liqThreshold
+                         >= (Select(s.debt_arr, actor) + amt) * BPB)
+        elif g == "healthy_position_after_collateral":
+            conds.append((Select(s.collateral, actor) - amt) * s.liqThreshold
+                         >= Select(s.debt_arr, actor) * BPB)
         elif g == "staked_ge_amt":     conds.append(Select(s.staked, actor) >= amt)
         elif g == "rewards_ge_amt":    conds.append(Select(s.rewards_arr, actor) >= amt)
         elif g == "cross_not_in_progress":
@@ -218,6 +227,14 @@ def _apply_guards(guard_names, s, actor, to, src, owner, amt,
         elif g == "price_ge_min":      conds.append(s.price >= amt)
         elif g == "price_valid":       conds.append(s.price > 0)
         elif g == "twap_stale":        conds.append(s.twap_age < amt)
+        elif g == "swap_k_exact_in":
+            if dy is None:
+                raise ValueError("guard swap_k_exact_in requires a dy parameter")
+            conds.append((s.reserveX + amt) * (s.reserveY - dy) >= s.reserveX * s.reserveY)
+        elif g == "swap_k_exact_out":
+            if dy is None:
+                raise ValueError("guard swap_k_exact_out requires a dy parameter")
+            conds.append((s.reserveX - amt) * (s.reserveY + dy) >= s.reserveX * s.reserveY)
         elif g == "timelock_expired":  conds.append(s.timelock_time <= 0)
         else:
             raise ValueError(f"unknown guard: {g}")

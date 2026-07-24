@@ -2,6 +2,13 @@
 
 All notable changes to Counterflow will be documented in this file.
 
+## [0.6.0] — 2026-07-23
+
+### Added
+
+- **Post-state-aware guards** — four new vocabulary entries: `swap_k_exact_in` and `swap_k_exact_out` (AMM constant-product preservation: (X±amt)(Y∓dy) ≥ XY), `healthy_position_after` and `healthy_position_after_collateral` (lending post-state per-actor health — borrow and withdraw collateral now model real Aave/Compound semantics). Total: 31 guards.
+- Real-contract example bindings (UniswapV2Swap, AaveLending, CompoundCToken) updated to use the new guards where applicable, tightening model fidelity.
+
 ## [0.5.1] — 2026-07-23
 
 ### Added

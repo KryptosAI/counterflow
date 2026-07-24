@@ -1,6 +1,6 @@
 {
   "model": "lending_pool",
-  "description": "Compound cToken — mint/redeem for cToken collateral (1:1 with underlying at initial exchange rate), borrow/repay for debt with healthy_position guard. Borrow pulls underlying from pool (total_sub_amt), repay returns it (total_add_amt). Note: overcollateralized is omitted for the same reason as AaveLending — aggregate solvency is not a real Compound invariant and post-borrow health needs post-state-aware guards; see README roadmap.",
+  "description": "Compound cToken — mint/redeem for cToken collateral (1:1 with underlying at initial exchange rate), borrow/repay for debt with healthy_position guard. Borrow pulls underlying from pool (total_sub_amt), repay returns it (total_add_amt). Note: healthy_position_after guard (new in v0.6.0) now enforces post-state per-borrow health, matching real Compound semantics. overcollateralized remains omitted — composite lending invariants require all_positions_healthy which isn't universal without post-redeem guards (future vocab).",
   "functions": [
     {
       "name": "mint",
@@ -14,7 +14,7 @@
     },
     {
       "name": "borrow",
-      "guards": ["amt_gt_0", "healthy_position", "total_ge_amt"],
+      "guards": ["amt_gt_0", "healthy_position", "total_ge_amt", "healthy_position_after"],
       "effects": ["debt_add", "bal_add_amt", "total_sub_amt"]
     },
     {

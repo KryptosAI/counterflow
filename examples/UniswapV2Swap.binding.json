@@ -1,15 +1,15 @@
 {
   "model": "amm_pool",
-  "description": "Uniswap V2 pair — constant-product swap with reentrancy lock, add/remove liquidity, swap-exact-output and swap-exact-input. Note: constant_product is omitted — preserving k across swaps requires a multiplicative post-state guard (dy bounded by the xy=k output formula), which the current vocabulary cannot express; see README roadmap.",
+  "description": "Uniswap V2 pair — constant-product swap with reentrancy lock, add/remove liquidity, swap-exact-output and swap-exact-input. Note: swap_k_exact_in and swap_k_exact_out guards (new in v0.6.0) now gate swaps to preserve the constant-product invariant; constant_product remains omitted because removeLiquidity can reduce product below the initial reference point without a proportional-removal guard — future vocab work.",
   "functions": [
     {
       "name": "swap",
-      "guards": ["dy_gt_0", "reserveX_ge_dx", "not_locked"],
+      "guards": ["dy_gt_0", "reserveX_ge_dx", "not_locked", "swap_k_exact_out"],
       "effects": ["reentrancy_lock_acquire", "reserveX_sub", "reserveY_add", "reentrancy_lock_release"]
     },
     {
       "name": "swapExactInput",
-      "guards": ["amt_gt_0", "dy_gt_0", "reserveY_ge_dy", "not_locked"],
+      "guards": ["amt_gt_0", "dy_gt_0", "reserveY_ge_dy", "not_locked", "swap_k_exact_in"],
       "effects": ["reentrancy_lock_acquire", "reserveX_add", "reserveY_sub", "reentrancy_lock_release"]
     },
     {

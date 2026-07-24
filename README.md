@@ -22,7 +22,7 @@ Solidity + English invariants
   binding.json             human-reviewable artifact (the real spec)
         │
         ▼
-  [validate]               deterministic vocabulary/schema gate (5 models, 27 guards, 43 effects, 33 invariants)
+  [validate]               deterministic vocabulary/schema gate (5 models, 31 guards, 43 effects, 33 invariants)
         │
         ▼
   [Z3 inductive check]     TRUSTED — 5 model types: erc20_pool, amm_pool, lending_pool, staking_pool, cross_contract
